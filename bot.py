@@ -319,13 +319,17 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode="Markdown",
             )
 
+    async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    key = context.user_data.get("paid_key")
+
     # Confirmation à la cliente
     await update.message.reply_text(
         "✅ Merci ! Preuve bien reçue.\n"
-        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
+        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🖤"
     )
 
-    # On “reset” pour éviter qu’elle renvoie sur une autre formation sans recliquer
+    # reset
     context.user_data.pop("paid_key", None)
 def main():
     application = Application.builder().token(TOKEN).build()
