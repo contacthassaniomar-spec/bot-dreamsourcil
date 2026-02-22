@@ -385,7 +385,7 @@ def main():
     application.add_handler(CallbackQueryHandler(formation_ultime_sans_henna_4j, pattern="^formation_ultime_sans_henna_4j$"))
 
     application.add_handler(CallbackQueryHandler(waitlist, pattern="^waitlist_"))
-    application.add_handler(CallbackQueryHandler(paid, pattern="^paid_"))
+    application.add_handler(CallbackQueryHandler(send_proof, pattern="^paid_"))
 
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, send_proof))
 
