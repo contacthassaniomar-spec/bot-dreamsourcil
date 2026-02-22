@@ -237,11 +237,16 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🆔 User ID : {user.id}"
             )
         )
-
+# ≈ ligne 238
+keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton("⬅️ Retour au menu", callback_data="menu")]
+])
+    # ≈ ligne 242
     await query.edit_message_text(
-        "✅ Merci ! Vous êtes bien inscrite sur la *liste d'attente*.\n"
-        "La formatrice vous recontactera dès qu'une place se libère ou qu'une nouvelle date est ouverte.",
-        parse_mode="Markdown",
+        "✅ Merci ! Vous êtes bien inscrite sur la *liste d'attente*.\n\n"
+        "La formatrice vous recontactera dès qu’une place se libère ou qu’une nouvelle date est ouverte.",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
     )
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
