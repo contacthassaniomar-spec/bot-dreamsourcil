@@ -211,7 +211,26 @@ async def menu_waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    # key = query.data.replace("waitlist_", "")  # on l’utilisera plus tard pour stocker/compter
+
+    key = query.data.replace("waitlist_", "")
+
+    user = query.from_user
+
+    # Message ADMIN
+    ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
+    if ADMIN_CHAT_ID:
+        await context.bot.send_message(
+            chat_id=int(ADMIN_CHAT_ID),
+            text=(
+                "📋 Nouvelle inscription – Liste d’attente\n\n"
+                f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+                + (f"🔗 Username : @{user.username}\n" if user.username else "🔗 Username : (aucun)\n")
+                +f"🎓 Formation : {key}\n"
+                +f"🆔 User ID : {user.id}"
+            )
+        )
+
+    # Message CLIENT
     await query.edit_message_text(
         "✅ Merci ! Vous êtes bien inscrite sur la *liste d’attente*.\n"
         "La formatrice vous recontactera dès qu’une place se libère ou qu’une nouvelle date est ouverte.",
