@@ -320,12 +320,47 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
             )
 
     async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
     user = update.effective_user
     key = context.user_data.get("paid_key")
 
+    if not chat_id_admin:
+        await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
+        return
+
+    if not key:
+        await update.message.reply_text("⚠️ Je n’ai pas retrouvé la formation liée à votre paiement. Merci de recliquer sur « J’ai payé ».")
+        return
+
+    caption = (
+        "✅ *Preuve de paiement reçue*\n"
+        f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+        f"🔗 Username : @{user.username}\n" if user.username else
+        "🔗 Username : (aucun)\n"
+    )
+    caption += f"📚 Formation : `{key}`\n🆔 User ID : `{user.id}`"
+
+    if update.message.photo:
+        file_id = update.message.photo[-1].file_id
+        await context.bot.send_photo(
+            chat_id=chat_id_admin,
+            photo=file_id,
+            caption=caption,
+            parse_mode="Markdown",
+        )
+
+    elif update.message.document:
+        file_id = update.message.document.file_id
+        await context.bot.send_document(
+            chat_id=chat_id_admin,
+            document=file_id,
+            caption=caption,
+            parse_mode="Markdown",
+        )
+
     await update.message.reply_text(
         "✅ Merci ! Preuve bien reçue.\n"
-        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
+        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🖤"
     )
 
     context.user_data.pop("paid_key", None)
