@@ -333,15 +333,16 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
 
 def main():
     application = Application.builder().token(TOKEN).build()
-    application.add_handler(CommandHandler("myid", myid))
+
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("myid", myid))
 
     application.add_handler(CallbackQueryHandler(show_menu, pattern="^menu$"))
     application.add_handler(CallbackQueryHandler(menu_formations, pattern="^menu_formations$"))
     application.add_handler(CallbackQueryHandler(menu_dates, pattern="^menu_dates$"))
     application.add_handler(CallbackQueryHandler(menu_paiement, pattern="^menu_paiement$"))
     application.add_handler(CallbackQueryHandler(menu_waitlist, pattern="^menu_waitlist$"))
-    application.add_handler(CallbackQueryHandler(menu_contact, pattern="^menu_contact$"))
+    application.add_handler(CallbackQueryHandler(menu_contact, pattern="^menu_contacts$"))
 
     application.add_handler(CallbackQueryHandler(formation_henna_2j, pattern="^formation_henna_2j$"))
     application.add_handler(CallbackQueryHandler(formation_browlift_2j, pattern="^formation_browlift_2j$"))
@@ -350,9 +351,11 @@ def main():
 
     application.add_handler(CallbackQueryHandler(waitlist, pattern="^waitlist_"))
     application.add_handler(CallbackQueryHandler(paid, pattern="^paid_"))
-    application.add_handler(CallbackQueryHandler(send_proof, pattern="^proof_"))
+
+    application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, send_proof))
 
     application.run_polling()
+
 
 if __name__ == "__main__":
     main()
