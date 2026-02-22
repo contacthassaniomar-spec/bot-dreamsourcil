@@ -320,9 +320,9 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
             )
 
     async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
-    user = update.effective_user
-    key = context.user_data.get("paid_key")
+        chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
+        user = update.effective_user
+        key = context.user_data.get("paid_key")
 
     if not chat_id_admin:
         await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
