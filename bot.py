@@ -218,6 +218,7 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
 username_line = f"🔗 Username : @{user.username}\n" if user.username else "🔗 Username : (aucun)\n"
     # Message ADMIN
     ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
+
     if ADMIN_CHAT_ID:
         await context.bot.send_message(
             chat_id=int(ADMIN_CHAT_ID),
