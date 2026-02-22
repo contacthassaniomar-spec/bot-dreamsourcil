@@ -230,11 +230,11 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=int(ID_CHAT_ADMIN),
             text=(
-                "📋 Nouvelle inscription – Liste d'attente\n\n"
-                +f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
-                + username_line +
-                +f"🎓 Formation : {key}\n"
-                +f"🆔 User ID : {user.id}"
+                "📄 Nouvelle inscription — Liste d'attente\n\n"
+                f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+                f"{username_line}"
+                f"📚 Formation : {key}\n"
+                f"🆔 User ID : {user.id}"
             )
         )
 
