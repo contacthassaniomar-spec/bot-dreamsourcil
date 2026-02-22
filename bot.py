@@ -323,13 +323,11 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     key = context.user_data.get("paid_key")
 
-    # Confirmation à la cliente
     await update.message.reply_text(
         "✅ Merci ! Preuve bien reçue.\n"
         "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
     )
 
-    # reset
     context.user_data.pop("paid_key", None)
 
 
