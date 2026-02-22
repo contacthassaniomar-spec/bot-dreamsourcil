@@ -319,7 +319,7 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode="Markdown",
             )
 
-    async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
         user = update.effective_user
         key = context.user_data.get("paid_key")
