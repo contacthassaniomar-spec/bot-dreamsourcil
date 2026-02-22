@@ -326,11 +326,13 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
     # Confirmation à la cliente
     await update.message.reply_text(
         "✅ Merci ! Preuve bien reçue.\n"
-        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🖤"
+        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
     )
 
     # reset
     context.user_data.pop("paid_key", None)
+
+
 def main():
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("myid", myid))
