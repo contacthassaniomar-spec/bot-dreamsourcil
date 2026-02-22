@@ -147,8 +147,7 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
         [InlineKeyboardButton("🗒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
         [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
     ])
-        ]
-    )
+    
     await query.edit_message_text(texte, reply_markup=kb, parse_mode="Markdown")
 
 async def formation_henna_2j(update: Update, context: ContextTypes.DEFAULT_TYPE):
