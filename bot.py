@@ -9,6 +9,9 @@ from telegram.ext import (
 
 TOKEN = os.environ.get("JETON_BOT_TELEGRAM")
 
+if not TOKEN or ":" not in TOKEN or len(TOKEN) < 30:
+    raise RuntimeError(f"TOKEN invalide ou vide (len={0 if not TOKEN else len(TOKEN)})")
+
 PAYPAL_LINK = "https://www.paypal.com/paypalme/DreamSourCilFR"
 
 # --- Textes / règles ---
