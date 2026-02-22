@@ -7,7 +7,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TOKEN = os.environ.get("JETON_BOT_TELEGRAM")
 
 PAYPAL_LINK = "https://www.paypal.com/paypalme/DreamSourCilFR"
 
@@ -215,15 +215,19 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     key = query.data.replace("waitlist_", "")
     user = query.from_user
 
-    username_line = f"🔗 Username : @{user.username}\n" if user.username else "🔗 Username : (aucun)\n"
+    username_line = (
+        f"🔗 Username : @{user.username}\n"
+        if user.username
+        else "🔗 Username : (aucun)\n"
+    )
 
-    # Message ADMIN
-    ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
-    if ADMIN_CHAT_ID:
+    ID_CHAT_ADMIN = os.environ.get("ID_CHAT_ADMIN")
+
+    if ID_CHAT_ADMIN:
         await context.bot.send_message(
-            chat_id=int(ADMIN_CHAT_ID),
+            chat_id=int(ID_CHAT_ADMIN),
             text=(
-                "📥 Nouvelle inscription – Liste d’attente\n\n"
+                "📋 Nouvelle inscription – Liste d'attente\n\n"
                 +f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
                 + username_line +
                 +f"🎓 Formation : {key}\n"
@@ -231,10 +235,9 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         )
 
-    # Message CLIENT
     await query.edit_message_text(
-        "✅ Merci ! Vous êtes bien inscrite sur la *liste d’attente*.\n"
-        "La formatrice vous recontactera dès qu’une place se libère ou qu’une nouvelle date est ouverte.",
+        "✅ Merci ! Vous êtes bien inscrite sur la *liste d'attente*.\n"
+        "La formatrice vous recontactera dès qu'une place se libère ou qu'une nouvelle date est ouverte.",
         parse_mode="Markdown",
     )
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
