@@ -226,28 +226,28 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     ID_CHAT_ADMIN = os.environ.get("ID_CHAT_ADMIN")
 
-    if ID_CHAT_ADMIN:
-        await context.bot.send_message(
-            chat_id=int(ID_CHAT_ADMIN),
-            text=(
-                "📄 Nouvelle inscription — Liste d'attente\n\n"
-                f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
-                f"{username_line}"
-                f"📚 Formation : {key}\n"
-                f"🆔 User ID : {user.id}"
-            )
+if ID_CHAT_ADMIN:
+    await context.bot.send_message(
+        chat_id=int(ID_CHAT_ADMIN),
+        text=(
+            "📄 Nouvelle inscription – Liste d'attente\n\n"
+            f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+            f"{username_line}"
+            f"🎓 Formation : {key}\n"
+            f"🆔 User ID : {user.id}"
         )
-# ≈ ligne 238
+    )
+
 keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton("⬅️ Retour au menu", callback_data="menu")]
 ])
-    # ≈ ligne 242
-    await query.edit_message_text(
-        "✅ Merci ! Vous êtes bien inscrite sur la *liste d'attente*.\n\n"
-        "La formatrice vous recontactera dès qu’une place se libère ou qu’une nouvelle date est ouverte.",
-        reply_markup=keyboard,
-        parse_mode="Markdown"
-    )
+
+await query.edit_message_text(
+    "✅ Merci ! Vous êtes bien inscrite sur la *liste d'attente*.\n\n"
+    "La formatrice vous recontactera dès qu'une place se libère ou qu'une nouvelle date est ouverte.",
+    reply_markup=keyboard,
+    parse_mode="Markdown"
+)
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Votre chat_id est : {update.effective_chat.id}"
