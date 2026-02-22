@@ -217,10 +217,13 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "La formatrice vous recontactera dès qu’une place se libère ou qu’une nouvelle date est ouverte.",
         parse_mode="Markdown",
     )
-
+async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        f"Votre chat_id est : {update.effective_chat.id}"
+    )
 def main():
     application = Application.builder().token(TOKEN).build()
-
+    application.add_handler(CommandHandler("myid", myid))
     application.add_handler(CommandHandler("start", start))
 
     application.add_handler(CallbackQueryHandler(show_menu, pattern="^menu$"))
