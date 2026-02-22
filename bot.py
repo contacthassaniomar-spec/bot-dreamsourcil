@@ -248,7 +248,7 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard,
         parse_mode="Markdown",
     )
-)
+
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Votre chat_id est : {update.effective_chat.id}"
