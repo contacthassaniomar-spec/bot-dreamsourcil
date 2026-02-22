@@ -213,17 +213,17 @@ async def waitlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     key = query.data.replace("waitlist_", "")
-
     user = query.from_user
-username_line = f"🔗 Username : @{user.username}\n" if user.username else "🔗 Username : (aucun)\n"
+
+    username_line = f"🔗 Username : @{user.username}\n" if user.username else "🔗 Username : (aucun)\n"
+
     # Message ADMIN
     ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
-
     if ADMIN_CHAT_ID:
         await context.bot.send_message(
             chat_id=int(ADMIN_CHAT_ID),
             text=(
-                "📥 Nouvelle inscription – Liste d'attente\n\n"
+                "📥 Nouvelle inscription – Liste d’attente\n\n"
                 +f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
                 + username_line +
                 +f"🎓 Formation : {key}\n"
