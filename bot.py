@@ -5,6 +5,8 @@ from telegram.ext import (
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 
 TOKEN = os.environ.get("JETON_BOT_TELEGRAM")
@@ -143,6 +145,7 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
         [
             [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
             [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
+            InlineKeyboardButton("✅ J’ai payé (envoyer la preuve)", callback_data=f"paid_{key}")
             [InlineKeyboardButton("📋 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
             [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
         ]
@@ -253,6 +256,79 @@ async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Votre chat_id est : {update.effective_chat.id}"
     )
+
+async def paid_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    key = query.data.replace("paid_", "")
+    context.user_data["paid_key"] = key
+
+    await query.edit_message_text(
+        "✅ Paiement en cours\n\n"
+        "📌 Merci d’envoyer ici :\n"
+        "• une *capture d’écran* PayPal\n"
+        "OU\n"
+        "• le *PDF du reçu*\n\n"
+        "Dès réception, je confirme et la formatrice est notifiée. 🤍",
+        parse_mode="Markdown",
+    )
+
+
+async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    key = context.user_data.get("paid_key")
+    if not key:
+        await update.message.reply_text(
+            "⚠️ Pour envoyer une preuve, ouvre d’abord une formation puis clique sur :\n"
+            "✅ J’ai payé (envoyer la preuve)"
+        )
+        return
+
+    user = update.effective_user
+    username = f"@{user.username}" if user.username else "(aucun)"
+    first = user.first_name or ""
+    last = user.last_name or ""
+    full_name = (first + " " + last).strip()
+
+    ID_CHAT_ADMIN = os.environ.get("ID_CHAT_ADMIN")
+
+    caption = (
+        "💳 *Preuve de paiement reçue*\n\n"
+        f"👤 Nom : {full_name}\n"
+        f"🔗 Username : {username}\n"
+        f"📚 Formation : `{key}`\n"
+        f"🆔 User ID : `{user.id}`"
+    )
+
+    # Envoi à l’admin si ID_CHAT_ADMIN est bien défini
+    if ID_CHAT_ADMIN:
+        chat_id_admin = int(ID_CHAT_ADMIN)
+
+        if update.message.photo:
+            file_id = update.message.photo[-1].file_id
+            await context.bot.send_photo(
+                chat_id=chat_id_admin,
+                photo=file_id,
+                caption=caption,
+                parse_mode="Markdown",
+            )
+        elif update.message.document:
+            file_id = update.message.document.file_id
+            await context.bot.send_document(
+                chat_id=chat_id_admin,
+                document=file_id,
+                caption=caption,
+                parse_mode="Markdown",
+            )
+
+    # Confirmation à la cliente
+    await update.message.reply_text(
+        "✅ Merci ! Preuve bien reçue.\n"
+        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
+    )
+
+    # On “reset” pour éviter qu’elle renvoie sur une autre formation sans recliquer
+    context.user_data.pop("paid_key", None)
 def main():
     application = Application.builder().token(TOKEN).build()
     application.add_handler(CommandHandler("myid", myid))
