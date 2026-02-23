@@ -1,11 +1,7 @@
 import os
 from typing import Dict, Any
 
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -48,7 +44,6 @@ REGLES = (
 # =========================
 # BASE DE CONNAISSANCE (IA)
 # =========================
-# 👉 Ici tu peux enrichir au fil du temps (infos, matériel, adresse, horaires, etc.)
 KNOWLEDGE_BASE = """
 Dream Sourcil Formation (Marseille).
 Objectif: informer sur les formations, dates, tarifs, modalités de paiement (acompte/solde),
@@ -167,7 +162,7 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📋 Liste d’attente", callback_data="main_waitlist")],
         [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
         [InlineKeyboardButton("📱 Mes réseaux sociaux", callback_data="main_socials")],
-        [InlineKeyboardButton("🤖 Assistant IA", callback_data="main_ai")],  # ✅ AJOUT IA
+        [InlineKeyboardButton("🤖 Assistant IA", callback_data="main_ai")],
     ])
 
 
@@ -325,19 +320,15 @@ async def ai_answer(user_text: str) -> str:
         return "⚠️ L’assistant IA n’est pas encore configuré. Merci de contacter la formatrice."
 
     try:
-        resp = client.responses.create(
+        resp = client.chat.completions.create(
             model=OPENAI_MODEL,
-            input=[
+            messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_text},
             ],
         )
-        # Le SDK renvoie généralement le texte via output_text
-        text = getattr(resp, "output_text", None)
-        if text:
-            return text.strip()
-        # fallback si output_text n'existe pas
-        return "Je n’ai pas réussi à générer une réponse. Peux-tu reformuler ?"
+        text = resp.choices[0].message.content or ""
+        return text.strip() if text.strip() else "Je peux t’aider, peux-tu reformuler ta question ?"
     except Exception:
         return "⚠️ Petit souci technique avec l’IA. Tu peux utiliser “Contacter la formatrice”."
 
@@ -350,7 +341,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await query.answer()
 
     if data == "main_menu":
-        # On coupe les modes
         context.user_data["contact_mode"] = False
         context.user_data["ai_mode"] = False
 
@@ -408,7 +398,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ IA
     if data == "main_ai":
         context.user_data["contact_mode"] = False
         context.user_data["ai_mode"] = True
@@ -423,7 +412,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ CONTACT: la cliente écrit un message -> envoyé à l'ADMIN
     if data == "main_contact":
         context.user_data["ai_mode"] = False
         context.user_data["contact_mode"] = True
@@ -582,7 +570,6 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_router))
 
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
