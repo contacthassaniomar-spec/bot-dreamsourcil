@@ -16,14 +16,22 @@ from telegram.ext import (
     filters,
 )
 
+# ✅ OpenAI (Agent IA)
+from openai import OpenAI
+
 # =========================
 # ENV
 # =========================
 TOKEN = os.getenv("TOKEN") or os.getenv("JETON")
 ID_CHAT_ADMIN = os.getenv("ID_CHAT_ADMIN")  # ex: "8453472234"
 
+# ✅ OpenAI
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+
+client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+
 # ✅ Ton vrai lien PayPal (par défaut)
-# (Tu peux aussi mettre PAYPAL_LINK sur Railway si tu veux, sinon ce lien sera utilisé.)
 PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://paypal.me/DreamSourCilFR")
 
 # ✅ Liens réseaux sociaux
@@ -36,6 +44,62 @@ REGLES = (
     "• Le solde doit être payé avant le jour J.\n"
     "• En cas d’empêchement, merci de prévenir au plus tôt.\n"
 )
+
+# =========================
+# BASE DE CONNAISSANCE (IA)
+# =========================
+# 👉 Ici tu peux enrichir au fil du temps (infos, matériel, adresse, horaires, etc.)
+KNOWLEDGE_BASE = """
+Dream Sourcil Formation (Marseille).
+Objectif: informer sur les formations, dates, tarifs, modalités de paiement (acompte/solde),
+et orienter vers la formatrice si nécessaire.
+
+Formations:
+1) Maîtriser la Prestation Henna Brow — 2 jours (990€ / acompte 297€)
+- Brow Mapping (avec décoloration OU épilation cire)
+- Colorimétrie Henné
+- Pratique sur plusieurs modèles
+Dates: pas de dates fixes — contacter la formatrice.
+
+2) Maîtriser la Prestation Browlift — 2 jours (1190€ / acompte 357€)
+- Brow Mapping + Teinture Hybride
+- Décoloration OU épilation cire
+- Pratique sur plusieurs modèles
+Dates: pas de dates fixes — contacter la formatrice.
+
+3) Formation Ultime Dream Sourcil — 4 jours (1790€ / acompte 537€)
+- Restructuration simple (décoloration OU épilation cire)
+- Browlift Restructuration
+- Browlift + Teinture + Restructuration
+- Prestation Henna Brow
+- Prestation Teinture Hybride
+- Module Marketing : attirer & fidéliser ses premières clientes
+Dates: 27→30 avril 2026 / 27→30 juillet 2026
+
+4) Formation Ultime — 4 jours (Sans module Henna Brow) (1500€ / acompte 450€)
+- Restructuration simple (décoloration OU épilation cire)
+- Browlift Restructuration
+- Browlift + Teinture + Restructuration
+- Prestation Teinture Hybride
+- Module Marketing : attirer & fidéliser ses premières clientes
+Dates: 27→30 avril 2026 / 27→30 juillet 2026
+"""
+
+SYSTEM_PROMPT = f"""
+Tu es l'assistante IA officielle de Dream Sourcil Formation.
+Ton rôle: répondre aux questions des clientes de manière claire, polie, professionnelle et chaleureuse.
+
+Règles:
+- Réponses courtes et utiles. Si la question est floue, poser UNE seule question.
+- Ne jamais inventer des infos. Si tu ne sais pas: dire "Je te confirme avec la formatrice" et proposer le bouton Contact.
+- Ne jamais demander de données sensibles (CB, mots de passe).
+- Pour le paiement: rappeler acompte/solde et renvoyer vers les boutons PayPal.
+- Si la cliente demande une réservation: expliquer la marche à suivre (payer acompte / envoyer preuve / liste d’attente).
+- Si besoin humain: orienter vers "📩 Contacter la formatrice".
+
+Connaissance:
+{KNOWLEDGE_BASE}
+"""
 
 # =========================
 # DATA
@@ -102,7 +166,8 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("💳 Paiement / Acompte", callback_data="main_paiement")],
         [InlineKeyboardButton("📋 Liste d’attente", callback_data="main_waitlist")],
         [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
-        [InlineKeyboardButton("📱 Mes réseaux sociaux", callback_data="main_socials")],  # ✅ AJOUTÉ
+        [InlineKeyboardButton("📱 Mes réseaux sociaux", callback_data="main_socials")],
+        [InlineKeyboardButton("🤖 Assistant IA", callback_data="main_ai")],  # ✅ AJOUT IA
     ])
 
 
@@ -128,11 +193,17 @@ def retour_menu_formations_kb() -> InlineKeyboardMarkup:
     ])
 
 
-# ✅ MENU RESEAUX SOCIAUX (AJOUTÉ)
 def menu_socials_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK)],
         [InlineKeyboardButton("🎵 TikTok", url=TIKTOK_LINK)],
+        [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")],
+    ])
+
+
+def menu_ai_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
         [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")],
     ])
 
@@ -244,6 +315,33 @@ async def notify_admin_contact(context: ContextTypes.DEFAULT_TYPE, user, message
     )
 
 # =========================
+# AGENT IA - helper
+# =========================
+async def ai_answer(user_text: str) -> str:
+    """
+    Génère une réponse IA à partir de la base de connaissance.
+    """
+    if not client:
+        return "⚠️ L’assistant IA n’est pas encore configuré. Merci de contacter la formatrice."
+
+    try:
+        resp = client.responses.create(
+            model=OPENAI_MODEL,
+            input=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_text},
+            ],
+        )
+        # Le SDK renvoie généralement le texte via output_text
+        text = getattr(resp, "output_text", None)
+        if text:
+            return text.strip()
+        # fallback si output_text n'existe pas
+        return "Je n’ai pas réussi à générer une réponse. Peux-tu reformuler ?"
+    except Exception:
+        return "⚠️ Petit souci technique avec l’IA. Tu peux utiliser “Contacter la formatrice”."
+
+# =========================
 # CALLBACKS
 # =========================
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -252,8 +350,12 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await query.answer()
 
     if data == "main_menu":
+        # On coupe les modes
+        context.user_data["contact_mode"] = False
+        context.user_data["ai_mode"] = False
+
         await query.edit_message_text(
-            "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
+            "👋 *Bienvenue sur le bot Dream Sourcil Formation.*\n\n"
             "Choisissez une rubrique ci-dessous :",
             reply_markup=main_menu_kb(),
             parse_mode=ParseMode.MARKDOWN,
@@ -261,6 +363,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     if data == "menu_formations":
+        context.user_data["contact_mode"] = False
+        context.user_data["ai_mode"] = False
         await query.edit_message_text(
             "Choisissez une formation :",
             reply_markup=menu_formations_kb(),
@@ -292,11 +396,9 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "2) Choisissez la formation\n"
             "3) Cliquez sur *🕒 S’inscrire sur liste d’attente*.",
             reply_markup=retour_menu_principal_kb(),
-            parse_mode=ParseMode.MARKDOWN,
         )
         return
 
-    # ✅ NOUVEAU : RESEAUX SOCIAUX
     if data == "main_socials":
         await query.edit_message_text(
             "📱 *Mes réseaux sociaux*\n\n"
@@ -306,8 +408,24 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
+    # ✅ IA
+    if data == "main_ai":
+        context.user_data["contact_mode"] = False
+        context.user_data["ai_mode"] = True
+
+        await query.edit_message_text(
+            "🤖 *Assistant IA Dream Sourcil*\n\n"
+            "Pose ta question ici (tarifs, contenu, dates, paiement, etc.).\n"
+            "Je te réponds immédiatement.\n\n"
+            "📌 À tout moment, tu peux aussi contacter la formatrice.",
+            reply_markup=menu_ai_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
     # ✅ CONTACT: la cliente écrit un message -> envoyé à l'ADMIN
     if data == "main_contact":
+        context.user_data["ai_mode"] = False
         context.user_data["contact_mode"] = True
         await query.edit_message_text(
             "📩 *Contacter la formatrice*\n\n"
@@ -351,30 +469,44 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
 # =========================
-# CONTACT MESSAGE RECEIVER
+# TEXT ROUTER (IA ou CONTACT)
 # =========================
-async def handle_contact_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not context.user_data.get("contact_mode"):
+async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Route les messages texte:
+    - si ai_mode => répond via IA
+    - sinon si contact_mode => envoie à l'admin
+    - sinon => ignore
+    """
+    user_text = (update.message.text or "").strip()
+    if not user_text:
         return
 
-    context.user_data["contact_mode"] = False
-
-    if not ID_CHAT_ADMIN:
-        await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
+    # IA
+    if context.user_data.get("ai_mode"):
+        answer = await ai_answer(user_text)
+        await update.message.reply_text(
+            answer,
+            reply_markup=menu_ai_kb(),
+        )
         return
 
-    user = update.effective_user
-    msg_text = (update.message.text or "").strip()
-    if not msg_text:
-        await update.message.reply_text("⚠️ Message vide. Réessaie.")
+    # Contact (admin)
+    if context.user_data.get("contact_mode"):
+        context.user_data["contact_mode"] = False
+
+        if not ID_CHAT_ADMIN:
+            await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
+            return
+
+        user = update.effective_user
+        await notify_admin_contact(context, user, user_text)
+
+        await update.message.reply_text(
+            "✅ Merci ! Ton message a bien été transmis à la formatrice. 🤍",
+            reply_markup=retour_menu_principal_kb(),
+        )
         return
-
-    await notify_admin_contact(context, user, msg_text)
-
-    await update.message.reply_text(
-        "✅ Merci ! Ton message a bien été transmis à la formatrice. 🤍",
-        reply_markup=retour_menu_principal_kb(),
-    )
 
 # =========================
 # PROOF RECEIVER
@@ -446,8 +578,8 @@ def main() -> None:
     # preuves paiement (photo/pdf)
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.PDF, send_proof))
 
-    # ✅ contact: texte (hors commandes)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_contact_message))
+    # ✅ texte: routeur (IA ou Contact)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_router))
 
     app.run_polling()
 
