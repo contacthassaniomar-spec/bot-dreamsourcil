@@ -174,7 +174,28 @@ async def menu_dates(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=bouton_retour_menu(),
         parse_mode="Markdown",
     )
+async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
+    key = query.data.replace("paid_", "")
+    context.user_data["paid_key"] = key
+
+    f = FORMATIONS.get(key, {})
+    titre = f.get("titre", key)
+
+    await query.edit_message_text(
+        "✅ Paiement noté !\n\n"
+        f"Formation sélectionnée : *{titre}*\n\n"
+        "📩 Maintenant, envoyez ici :\n"
+        "• une capture d’écran PayPal (photo) OU\n"
+        "• le reçu PayPal (document)\n\n"
+        "Je transfère automatiquement à la formatrice. 🤍",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Retour au menu", callback_data="menu_")]
+        ])
+    )
 async def menu_paiement(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -389,7 +410,7 @@ def main():
 
     application.add_handler(CallbackQueryHandler(waitlist, pattern="^waitlist_"))
     
-
+    application.add_handler(CallbackQueryHandler(paid, pattern=r"^paid_"))
     application.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, send_proof))
 
     application.run_polling()
