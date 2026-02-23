@@ -404,34 +404,6 @@ async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Veuillez maintenant envoyer la **preuve de paiement** (capture PayPal ou reçu).\n\n"
         "⚠️ Assurez-vous que le **montant**, le **nom** et la **formation** soient visibles."
     )
-    # Photo
-    if update.message.photo:
-        file_id = update.message.photo[-1].file_id
-        await context.bot.send_photo(
-            chat_id=chat_id_admin,
-            photo=file_id,
-            caption=caption,
-            parse_mode="Markdown",
-        )
-
-    # Document
-    elif update.message.document:
-        file_id = update.message.document.file_id
-        await context.bot.send_document(
-            chat_id=chat_id_admin,
-            document=file_id,
-            caption=caption,
-            parse_mode="Markdown",
-        )
-
-    await update.message.reply_text(
-        "✅ Merci ! Preuve bien reçue.\n"
-        "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
-    )
-
-    # reset
-    context.user_data.pop("paid_key", None)
-
 
 def main():
     application = Application.builder().token(TOKEN).build()
