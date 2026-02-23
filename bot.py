@@ -173,8 +173,7 @@ kb = InlineKeyboardMarkup([
         )
     ]
 ])
-    
-    await query.edit_message_text(texte, reply_markup=kb, parse_mode="Markdown")
+await query.edit_message_text(texte, reply_markup=kb, parse_mode="Markdown")
 
 async def formation_henna_2j(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await afficher_formation(update, context, "henna_2j")
