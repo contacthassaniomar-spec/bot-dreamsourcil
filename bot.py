@@ -26,6 +26,10 @@ ID_CHAT_ADMIN = os.getenv("ID_CHAT_ADMIN")  # ex: "8453472234"
 # (Tu peux aussi mettre PAYPAL_LINK sur Railway si tu veux, sinon ce lien sera utilisé.)
 PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://paypal.me/DreamSourCilFR")
 
+# ✅ Liens réseaux sociaux
+INSTAGRAM_LINK = "https://www.instagram.com/dreamsourcil_marseille?igsh=MW9xN2pkdjIxbDFzMw%3D%3D&utm_source=qr"
+TIKTOK_LINK = "https://www.tiktok.com/@dreamsourcil.marseille?_r=1&_t=ZG-94AjxonEL0i"
+
 REGLES = (
     "📌 *Règles importantes*\n"
     "• L’acompte bloque la place.\n"
@@ -36,8 +40,6 @@ REGLES = (
 # =========================
 # DATA
 # =========================
-# ✅ PRIX + CONTENU + DATES selon ton message
-# ⚠️ Acompte : je l’ai mis à 30% par défaut (tu peux modifier)
 FORMATIONS: Dict[str, Dict[str, Any]] = {
     "henna_2j": {
         "titre": "Maîtriser la Prestation Henna Brow — 2 jours",
@@ -47,9 +49,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
             "Pratique sur plusieurs modèles",
         ],
         "prix": 990,
-        "acompte": 297,  # 30% de 990 = 297
+        "acompte": 297,
         "dates": "Pas de dates fixes — contactez la formatrice.",
-        # "paypal_link": "https://paypal.me/DreamSourCilFR"  # optionnel: lien spécifique
     },
     "browlift_2j": {
         "titre": "Maîtriser la Prestation Browlift — 2 jours",
@@ -59,9 +60,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
             "Pratique sur plusieurs modèles",
         ],
         "prix": 1190,
-        "acompte": 357,  # 30% de 1190 = 357
+        "acompte": 357,
         "dates": "Pas de dates fixes — contactez la formatrice.",
-        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
     "ultime_4j": {
         "titre": "Formation Ultime Dream Sourcil — 4 jours",
@@ -74,9 +74,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
             "Module Marketing : attirer & fidéliser ses premières clientes",
         ],
         "prix": 1790,
-        "acompte": 537,  # 30% de 1790 = 537
+        "acompte": 537,
         "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
-        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
     "ultime_4j_sans_henna": {
         "titre": "Formation Ultime Dream Sourcil — 4 jours (Sans module Henna Brow)",
@@ -88,9 +87,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
             "Module Marketing : attirer & fidéliser ses premières clientes",
         ],
         "prix": 1500,
-        "acompte": 450,  # 30% de 1500 = 450
+        "acompte": 450,
         "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
-        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
 }
 
@@ -98,13 +96,13 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
 # MENUS
 # =========================
 def main_menu_kb() -> InlineKeyboardMarkup:
-    # ✅ Menu principal “comme avant”
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 Formations", callback_data="menu_formations")],
         [InlineKeyboardButton("📅 Prochaines dates", callback_data="main_dates")],
         [InlineKeyboardButton("💳 Paiement / Acompte", callback_data="main_paiement")],
         [InlineKeyboardButton("📋 Liste d’attente", callback_data="main_waitlist")],
         [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
+        [InlineKeyboardButton("📱 Mes réseaux sociaux", callback_data="main_socials")],  # ✅ AJOUTÉ
     ])
 
 
@@ -127,6 +125,15 @@ def retour_menu_principal_kb() -> InlineKeyboardMarkup:
 def retour_menu_formations_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")]
+    ])
+
+
+# ✅ MENU RESEAUX SOCIAUX (AJOUTÉ)
+def menu_socials_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📸 Instagram", url=INSTAGRAM_LINK)],
+        [InlineKeyboardButton("🎵 TikTok", url=TIKTOK_LINK)],
+        [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")],
     ])
 
 # =========================
@@ -195,7 +202,6 @@ async def menu_dates(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 # ADMIN NOTIFS
 # =========================
 async def notify_admin_waitlist(context: ContextTypes.DEFAULT_TYPE, user, key: str) -> None:
-    """✅ Envoi à l'admin quand quelqu'un s'inscrit sur liste d'attente"""
     if not ID_CHAT_ADMIN:
         return
 
@@ -219,7 +225,6 @@ async def notify_admin_waitlist(context: ContextTypes.DEFAULT_TYPE, user, key: s
 
 
 async def notify_admin_contact(context: ContextTypes.DEFAULT_TYPE, user, message_text: str) -> None:
-    """✅ Envoi à l'admin quand une cliente envoie un message via 'Contacter la formatrice'"""
     if not ID_CHAT_ADMIN:
         return
 
@@ -291,6 +296,16 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
+    # ✅ NOUVEAU : RESEAUX SOCIAUX
+    if data == "main_socials":
+        await query.edit_message_text(
+            "📱 *Mes réseaux sociaux*\n\n"
+            "Retrouvez Dream Sourcil ici :",
+            reply_markup=menu_socials_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
     # ✅ CONTACT: la cliente écrit un message -> envoyé à l'ADMIN
     if data == "main_contact":
         context.user_data["contact_mode"] = True
@@ -326,7 +341,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         key = data.replace("waitlist_", "")
         user = update.effective_user
 
-        # ✅ NOTIFIER ADMIN
         await notify_admin_waitlist(context, user, key)
 
         await query.edit_message_text(
@@ -340,13 +354,9 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # CONTACT MESSAGE RECEIVER
 # =========================
 async def handle_contact_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Si la cliente a cliqué sur 'Contacter la formatrice', son prochain message texte est envoyé à l'admin.
-    """
     if not context.user_data.get("contact_mode"):
         return
 
-    # On désactive le mode contact dès qu'on reçoit un message
     context.user_data["contact_mode"] = False
 
     if not ID_CHAT_ADMIN:
