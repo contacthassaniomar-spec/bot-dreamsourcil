@@ -134,7 +134,7 @@ def retour_menu_formations_kb() -> InlineKeyboardMarkup:
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
+        "👋 *Bienvenue sur le bot Dream Sourcil Formation.*\n\n"
         "Choisissez une rubrique ci-dessous :",
         reply_markup=main_menu_kb(),
         parse_mode=ParseMode.MARKDOWN,
