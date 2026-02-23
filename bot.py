@@ -144,6 +144,7 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
         [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
+        InlineKeyboardButton("📎 J’ai déjà payé – envoyer ma preuve",callback_data=f"paid_{key}"),
         [InlineKeyboardButton("🗒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
         [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
     ])
