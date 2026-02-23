@@ -130,50 +130,31 @@ async def menu_formations(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE, key: str):
     query = update.callback_query
     await query.answer()
+
     f = FORMATIONS[key]
 
     texte = (
         f"✨ *{f['titre']}*\n\n"
-        "✅ Inclus :\n" + "\n".join([f"• {x}" for x in f["details"]]) + "\n\n"
-        f"💶 Prix : *{f['prix']}€*\n"
-        f"💳 Acompte (30%) : *{f['acompte']}€*\n\n"
-        f"📅 Dates :\n{f['dates']}\n\n"
-        f"{REGLES}"
+        + "✅ Inclus :\n" + "\n".join([f"• {x}" for x in f["details"]]) + "\n\n"
+        + f"💶 Prix : *{f['prix']}€*\n"
+        + f"💳 Acompte (30%) : *{f['acompte']}€*\n\n"
+        + f"📅 Dates :\n{f['dates']}\n\n"
+        + f"{REGLES}"
     )
 
-kb = InlineKeyboardMarkup([
-        [
-        InlineKeyboardButton(
-            f"💳 Payer l'acompte ({f['acompte']}€)",
-            url=PAYPAL_LINK
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            f"💳 Payer en intégral ({f['prix']}€)",
-            url=PAYPAL_LINK
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            "📎 J’ai déjà payé – envoyer ma preuve",
-            callback_data=f"paid_{key}"
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            "🕒 S’inscrire sur liste d’attente",
-            callback_data=f"waitlist_{key}"
-        )
-    ],
-    [
-        InlineKeyboardButton(
-            "⬅️ Retour",
-            callback_data="menu_formations"
-        )
-    ]
-])
-    await query.edit_message_text(texte, reply_markup=kb, parse_mode="Markdown")
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton(f"💳 Payer l'acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
+        [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
+        [InlineKeyboardButton("📎 J’ai déjà payé — envoyer ma preuve", callback_data=f"paid_{key}")],
+        [InlineKeyboardButton("🕒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
+        [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
+    ])
+
+    await query.edit_message_text(
+        texte,
+        reply_markup=kb,
+        parse_mode="Markdown"
+    )
 
 async def formation_henna_2j(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await afficher_formation(update, context, "henna_2j")
