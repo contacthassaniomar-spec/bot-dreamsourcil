@@ -141,13 +141,38 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
         f"{REGLES}"
     )
 
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
-        [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
-        [InlineKeyboardButton("📸 J’ai déjà payé – envoyer ma preuve", callback_data=f"paid_{key}")],
-        [InlineKeyboardButton("📝 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
-        [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
-    ])
+kb = InlineKeyboardMarkup([
+        [
+        InlineKeyboardButton(
+            f"💳 Payer l'acompte ({f['acompte']}€)",
+            url=PAYPAL_LINK
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            f"💳 Payer en intégral ({f['prix']}€)",
+            url=PAYPAL_LINK
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            "📎 J’ai déjà payé – envoyer ma preuve",
+            callback_data=f"paid_{key}"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            "🕒 S’inscrire sur liste d’attente",
+            callback_data=f"waitlist_{key}"
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            "⬅️ Retour",
+            callback_data="menu_formations"
+        )
+    ]
+])
     
     await query.edit_message_text(texte, reply_markup=kb, parse_mode="Markdown")
 
@@ -342,6 +367,17 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
             )
 
 async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.photo:
+    file_id = update.message.photo[-1].file_id
+
+elif update.message.document:
+    file_id = update.message.document.file_id
+
+else:
+    await update.message.reply_text(
+        "⚠️ Merci d’envoyer une capture ou un PDF de paiement."
+    )
+        return
     chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
     user = update.effective_user
     key = context.user_data.get("paid_key")
@@ -355,7 +391,14 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not key:
         await update.message.reply_text("⚠️ Je n’ai pas retrouvé la formation liée à votre paiement. Merci de recliquer sur le menu Paiement.")
         return
-
+    # 1) récupérer le fichier envoyé (photo ou document)
+    if update.message.photo:
+    file_id = update.message.photo[-1].file_id
+elif update.message.document:
+    file_id = update.message.document.file_id
+else:
+    await update.message.reply_text("⚠️ Merci d’envoyer une capture (photo) ou un reçu (PDF) de votre paiement.")
+    return
     caption = (
         "✅ *Preuve de paiement reçue*\n"
         f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
