@@ -380,12 +380,12 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("⚠️ Je n’ai pas retrouvé la formation liée à votre paiement. Merci de recliquer sur le menu Paiement.")
         return
     # 1) récupérer le fichier envoyé (photo ou document)
-    if update.message.photo:
+if update.message.photo:
     file_id = update.message.photo[-1].file_id
 elif update.message.document:
     file_id = update.message.document.file_id
 else:
-    await update.message.reply_text("⚠️ Merci d’envoyer une capture (photo) ou un reçu (PDF) de votre paiement.")
+    await update.message.reply_text("⚠️ Merci d'envoyer une capture (photo) ou un reçu (PDF) de votre paiement.")
     return
     caption = (
         "✅ *Preuve de paiement reçue*\n"
