@@ -366,17 +366,6 @@ async def handle_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYP
                 parse_mode="Markdown",
             )
 
-async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.photo:
-    file_id = update.message.photo[-1].file_id
-
-elif update.message.document:
-    file_id = update.message.document.file_id
-
-else:
-    await update.message.reply_text(
-        "⚠️ Merci d’envoyer une capture ou un PDF de paiement."
-    )
         return
     chat_id_admin = int(os.environ.get("ID_CHAT_ADMIN", "0"))
     user = update.effective_user
