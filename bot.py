@@ -125,13 +125,13 @@ def kb_formations_menu() -> InlineKeyboardMarkup:
             [InlineKeyboardButton("Browlift (2j)", callback_data="formation:browlift_2j")],
             [InlineKeyboardButton("Ultime (4j)", callback_data="formation:ultime_4j")],
             [InlineKeyboardButton("Ultime sans Henna (4j)", callback_data="formation:ultime_sans_henna_4j")],
-            [InlineKeyboardButton("⬅️ Retour", callback_data="back_main")],
+            [InlineKeyboardButton("⬅️ Return", callback_data="back_main")],
         ]
     )
 
 
 def kb_back_main() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Retour menu", callback_data="back_main")]])
+    return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ return menu", callback_data="back_main")]])
 
 
 def kb_formation_actions(key: str) -> InlineKeyboardMarkup:
@@ -142,7 +142,7 @@ def kb_formation_actions(key: str) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)] if PAYPAL_LINK else [],
             [InlineKeyboardButton("✅ J’ai déjà payé — envoyer ma preuve", callback_data=f"paid:{key}")],
             [InlineKeyboardButton("🕒 S’inscrire sur liste d’attente", callback_data=f"waitlist:{key}")],
-            [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
+            [InlineKeyboardButton("⬅️ return", callback_data="menu_formations")],
         ]
     )
 
@@ -235,7 +235,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "Veuillez maintenant envoyer la **preuve de paiement** (capture PayPal ou reçu PDF).\n\n"
             "⚠️ Assurez-vous que le **montant**, le **nom** et la **formation** soient visibles.",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Retour", callback_data=f"formation:{key}")]]),
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ return", callback_data=f"formation:{key}")]]),
         )
         return
 
