@@ -27,7 +27,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-# ✅ Ton vrai lien PayPal (par défaut)
+# ✅ PayPal
 PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://paypal.me/DreamSourCilFR")
 
 # ✅ Liens réseaux sociaux
@@ -78,6 +78,11 @@ Dates: 27→30 avril 2026 / 27→30 juillet 2026
 - Prestation Teinture Hybride
 - Module Marketing : attirer & fidéliser ses premières clientes
 Dates: 27→30 avril 2026 / 27→30 juillet 2026
+
+Paiement:
+- Acompte = 30% pour bloquer la place
+- Solde à payer avant le jour J
+- La preuve de paiement peut être envoyée en capture ou PDF via le bot
 """
 
 SYSTEM_PROMPT = f"""
@@ -160,9 +165,9 @@ def main_menu_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📅 Prochaines dates", callback_data="main_dates")],
         [InlineKeyboardButton("💳 Paiement / Acompte", callback_data="main_paiement")],
         [InlineKeyboardButton("📋 Liste d’attente", callback_data="main_waitlist")],
-        [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
         [InlineKeyboardButton("📱 Mes réseaux sociaux", callback_data="main_socials")],
         [InlineKeyboardButton("🤖 Assistant IA", callback_data="main_ai")],
+        [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
     ])
 
 
@@ -206,6 +211,8 @@ def menu_ai_kb() -> InlineKeyboardMarkup:
 # COMMANDS
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data["contact_mode"] = False
+    context.user_data["ai_mode"] = False
     await update.message.reply_text(
         "👋 *Bienvenue sur le bot Dream Sourcil Formation.*\n\n"
         "Choisissez une rubrique ci-dessous :",
@@ -313,23 +320,26 @@ async def notify_admin_contact(context: ContextTypes.DEFAULT_TYPE, user, message
 # AGENT IA - helper
 # =========================
 async def ai_answer(user_text: str) -> str:
-    """
-    Génère une réponse IA à partir de la base de connaissance.
-    """
     if not client:
         return "⚠️ L’assistant IA n’est pas encore configuré. Merci de contacter la formatrice."
 
     try:
-        resp = client.chat.completions.create(
+        resp = client.responses.create(
             model=OPENAI_MODEL,
-            messages=[
+            input=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_text},
             ],
         )
-        text = resp.choices[0].message.content or ""
-        return text.strip() if text.strip() else "Je peux t’aider, peux-tu reformuler ta question ?"
-    except Exception:
+
+        text = getattr(resp, "output_text", None)
+        if text:
+            return text.strip()
+
+        return "Je n’ai pas réussi à générer une réponse. Peux-tu reformuler ?"
+    except Exception as e:
+        # IMPORTANT: on log l’erreur pour que tu la voies dans Railway > Logs
+        print(f"[AI ERROR] {e}")
         return "⚠️ Petit souci technique avec l’IA. Tu peux utiliser “Contacter la formatrice”."
 
 # =========================
@@ -343,7 +353,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if data == "main_menu":
         context.user_data["contact_mode"] = False
         context.user_data["ai_mode"] = False
-
         await query.edit_message_text(
             "👋 *Bienvenue sur le bot Dream Sourcil Formation.*\n\n"
             "Choisissez une rubrique ci-dessous :",
@@ -401,7 +410,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if data == "main_ai":
         context.user_data["contact_mode"] = False
         context.user_data["ai_mode"] = True
-
         await query.edit_message_text(
             "🤖 *Assistant IA Dream Sourcil*\n\n"
             "Pose ta question ici (tarifs, contenu, dates, paiement, etc.).\n"
@@ -446,7 +454,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if data.startswith("waitlist_"):
         key = data.replace("waitlist_", "")
         user = update.effective_user
-
         await notify_admin_waitlist(context, user, key)
 
         await query.edit_message_text(
@@ -460,12 +467,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # TEXT ROUTER (IA ou CONTACT)
 # =========================
 async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Route les messages texte:
-    - si ai_mode => répond via IA
-    - sinon si contact_mode => envoie à l'admin
-    - sinon => ignore
-    """
     user_text = (update.message.text or "").strip()
     if not user_text:
         return
@@ -473,10 +474,7 @@ async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE)
     # IA
     if context.user_data.get("ai_mode"):
         answer = await ai_answer(user_text)
-        await update.message.reply_text(
-            answer,
-            reply_markup=menu_ai_kb(),
-        )
+        await update.message.reply_text(answer, reply_markup=menu_ai_kb())
         return
 
     # Contact (admin)
@@ -566,10 +564,11 @@ def main() -> None:
     # preuves paiement (photo/pdf)
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.PDF, send_proof))
 
-    # ✅ texte: routeur (IA ou Contact)
+    # texte: routeur (IA ou Contact)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_router))
 
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
