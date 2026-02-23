@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from telegram import (
     Update,
@@ -79,35 +79,51 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
 }
 
 # =========================
-# HELPERS
+# HELPERS / MENUS
 # =========================
+def main_menu_kb() -> InlineKeyboardMarkup:
+    """Menu principal (comme ta capture)"""
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📚 Formations", callback_data="menu_formations")],
+        [InlineKeyboardButton("📅 Prochaines dates", callback_data="main_dates")],
+        [InlineKeyboardButton("💳 Paiement / Acompte", callback_data="main_paiement")],
+        [InlineKeyboardButton("📋 Liste d’attente", callback_data="main_waitlist")],
+        [InlineKeyboardButton("📩 Contacter la formatrice", callback_data="main_contact")],
+    ])
+
+
 def menu_formations_kb() -> InlineKeyboardMarkup:
+    """Sous-menu formations (Henna/Browlift/Ultime)"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 Henna Brow (2j)", callback_data="formation_henna_2j")],
         [InlineKeyboardButton("✨ Browlift (2j)", callback_data="formation_browlift_2j")],
         [InlineKeyboardButton("👑 Formation Ultime (4j)", callback_data="formation_ultime_4j")],
-        [InlineKeyboardButton("📅 Dates", callback_data="menu_dates")],
-        [InlineKeyboardButton("📩 Contact", callback_data="menu_contact")],
+        [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")],
     ])
 
 
-def retour_menu_kb() -> InlineKeyboardMarkup:
+def retour_menu_principal_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("⬅️ Retour menu", callback_data="menu_formations")]
+        [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")]
     ])
 
+
+def retour_menu_formations_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")]
+    ])
 
 # =========================
 # COMMANDS
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # ✅ MENU PRINCIPAL (comme avant)
     await update.message.reply_text(
-        "👋 *Bienvenue sur le bot Dream Sourcil*\n\n"
-        "Choisissez une rubrique :",
-        reply_markup=menu_formations_kb(),
+        "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
+        "Choisissez une rubrique ci-dessous :",
+        reply_markup=main_menu_kb(),
         parse_mode=ParseMode.MARKDOWN,
     )
-
 
 # =========================
 # VIEWS
@@ -132,7 +148,7 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
         [InlineKeyboardButton(f"💰 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
         [InlineKeyboardButton("✅ J’ai déjà payé — envoyer ma preuve", callback_data=f"paid_{key}")],
         [InlineKeyboardButton("🕒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
-        [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
+        [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")],
     ])
 
     await query.edit_message_text(
@@ -155,7 +171,7 @@ async def menu_dates(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     await query.edit_message_text(
         texte,
-        reply_markup=retour_menu_kb(),
+        reply_markup=retour_menu_principal_kb(),
         parse_mode=ParseMode.MARKDOWN,
     )
 
@@ -173,10 +189,9 @@ async def menu_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     await query.edit_message_text(
         texte,
-        reply_markup=retour_menu_kb(),
+        reply_markup=retour_menu_principal_kb(),
         parse_mode=ParseMode.MARKDOWN,
     )
-
 
 # =========================
 # CALLBACKS
@@ -184,25 +199,65 @@ async def menu_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     data = query.data
+    await query.answer()
 
+    # ✅ Retour / affichage menu principal
+    if data == "main_menu":
+        await query.edit_message_text(
+            "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
+            "Choisissez une rubrique ci-dessous :",
+            reply_markup=main_menu_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    # ✅ Rubrique Formations => sous-menu (Henna/Browlift/Ultime)
     if data == "menu_formations":
-        await query.answer()
         await query.edit_message_text(
             "Choisissez une formation :",
             reply_markup=menu_formations_kb(),
         )
         return
 
-    if data == "menu_dates":
+    # ✅ Rubrique Prochaines dates
+    if data == "main_dates":
         await menu_dates(update, context)
         return
 
-    if data == "menu_contact":
+    # ✅ Rubrique Paiement / Acompte
+    if data == "main_paiement":
+        await query.edit_message_text(
+            "💳 *Paiement / Acompte*\n\n"
+            "👉 Pour payer un acompte ou le total :\n"
+            "1) Cliquez sur *📚 Formations*\n"
+            "2) Choisissez votre formation\n"
+            "3) Cliquez sur *Payer l’acompte* ou *Payer en intégral*\n\n"
+            "✅ Si vous avez déjà payé : cliquez sur *J’ai déjà payé — envoyer ma preuve*.",
+            reply_markup=retour_menu_principal_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    # ✅ Rubrique Liste d’attente
+    if data == "main_waitlist":
+        await query.edit_message_text(
+            "📋 *Liste d’attente*\n\n"
+            "👉 Pour vous inscrire sur liste d’attente :\n"
+            "1) Cliquez sur *📚 Formations*\n"
+            "2) Choisissez la formation\n"
+            "3) Cliquez sur *🕒 S’inscrire sur liste d’attente*.",
+            reply_markup=retour_menu_principal_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    # ✅ Rubrique Contact
+    if data == "main_contact":
         await menu_contact(update, context)
         return
 
+    # ======= Formations =======
     if data.startswith("formation_"):
-        # formation_henna_2j => henna_2j
         key = data.replace("formation_", "")
         await afficher_formation(update, context, key)
         return
@@ -210,7 +265,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if data.startswith("paid_"):
         key = data.replace("paid_", "")
         context.user_data["paid_key"] = key
-        await query.answer()
         await query.edit_message_text(
             "✅ Merci !\n\n"
             "Veuillez maintenant *envoyer la preuve de paiement* :\n"
@@ -218,20 +272,17 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             "• un *reçu PDF*\n\n"
             "⚠️ Assurez-vous que le *montant*, le *nom* et la *formation* soient visibles.",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=retour_menu_kb(),
+            reply_markup=retour_menu_formations_kb(),
         )
         return
 
     if data.startswith("waitlist_"):
-        await query.answer()
         await query.edit_message_text(
             "🕒 D’accord ! Vous êtes noté(e) pour la liste d’attente.\n\n"
             "📩 La formatrice vous recontactera dès qu’une place se libère.",
-            reply_markup=retour_menu_kb(),
+            reply_markup=retour_menu_formations_kb(),
         )
         return
-
-    await query.answer()
 
 
 # =========================
