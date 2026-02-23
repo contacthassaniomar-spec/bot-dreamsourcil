@@ -144,8 +144,8 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
         [InlineKeyboardButton(f"💳 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
-        InlineKeyboardButton("📎 J’ai déjà payé – envoyer ma preuve",callback_data=f"paid_{key}"),
-        [InlineKeyboardButton("🗒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
+        [InlineKeyboardButton("📸 J’ai déjà payé – envoyer ma preuve", callback_data=f"paid_{key}")],
+        [InlineKeyboardButton("📝 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
         [InlineKeyboardButton("⬅️ Retour", callback_data="menu_formations")],
     ])
     
@@ -361,7 +361,18 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
         f"🆔 User ID : `{user.id}`\n"
     )
+async def paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
+    key = query.data.replace("paid_", "")
+    context.user_data["paid_key"] = key
+
+    await query.edit_message_text(
+        "📸 Merci !\n\n"
+        "Veuillez maintenant envoyer la **preuve de paiement** (capture PayPal ou reçu).\n\n"
+        "⚠️ Assurez-vous que le **montant**, le **nom** et la **formation** soient visibles."
+    )
     # Photo
     if update.message.photo:
         file_id = update.message.photo[-1].file_id
