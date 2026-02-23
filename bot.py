@@ -22,8 +22,9 @@ from telegram.ext import (
 TOKEN = os.getenv("TOKEN") or os.getenv("JETON")
 ID_CHAT_ADMIN = os.getenv("ID_CHAT_ADMIN")  # ex: "8453472234"
 
-# Lien PayPal général (si tu as un lien unique). Sinon tu peux mettre un lien par formation dans FORMATIONS.
-PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://www.paypal.com/")
+# ✅ Ton vrai lien PayPal (par défaut)
+# (Tu peux aussi mettre PAYPAL_LINK sur Railway si tu veux, sinon ce lien sera utilisé.)
+PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://paypal.me/DreamSourCilFR")
 
 REGLES = (
     "📌 *Règles importantes*\n"
@@ -46,8 +47,9 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
             "Pratique sur plusieurs modèles",
         ],
         "prix": 990,
-        "acompte": 297,  # 30% de 990 = 297 (modifie si tu veux un autre acompte)
+        "acompte": 297,  # 30% de 990 = 297
         "dates": "Pas de dates fixes — contactez la formatrice.",
+        # "paypal_link": "https://paypal.me/DreamSourCilFR"  # optionnel: lien spécifique
     },
     "browlift_2j": {
         "titre": "Maîtriser la Prestation Browlift — 2 jours",
@@ -59,9 +61,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
         "prix": 1190,
         "acompte": 357,  # 30% de 1190 = 357
         "dates": "Pas de dates fixes — contactez la formatrice.",
+        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
-
-    # ✅ Formation ultime = 2 tarifs
     "ultime_4j": {
         "titre": "Formation Ultime Dream Sourcil — 4 jours",
         "details": [
@@ -75,9 +76,8 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
         "prix": 1790,
         "acompte": 537,  # 30% de 1790 = 537
         "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
+        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
-
-    # ✅ Option “Ultime sans Henna” (pour refléter ton offre)
     "ultime_4j_sans_henna": {
         "titre": "Formation Ultime Dream Sourcil — 4 jours (Sans module Henna Brow)",
         "details": [
@@ -90,6 +90,7 @@ FORMATIONS: Dict[str, Dict[str, Any]] = {
         "prix": 1500,
         "acompte": 450,  # 30% de 1500 = 450
         "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
+        # "paypal_link": "https://paypal.me/DreamSourCilFR"
     },
 }
 
@@ -128,7 +129,6 @@ def retour_menu_formations_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")]
     ])
 
-
 # =========================
 # COMMANDS
 # =========================
@@ -139,7 +139,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=main_menu_kb(),
         parse_mode=ParseMode.MARKDOWN,
     )
-
 
 # =========================
 # VIEWS
@@ -192,25 +191,6 @@ async def menu_dates(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         parse_mode=ParseMode.MARKDOWN,
     )
 
-
-async def menu_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-
-    texte = (
-        "📩 *Contacter la formatrice*\n\n"
-        "Pour réserver une date, poser une question ou confirmer un paiement :\n"
-        "• Instagram : @dreamsourcil_marseille\n"
-        "• Email : dreamsourcil.marseille@gmail.com"
-    )
-
-    await query.edit_message_text(
-        texte,
-        reply_markup=retour_menu_principal_kb(),
-        parse_mode=ParseMode.MARKDOWN,
-    )
-
-
 # =========================
 # ADMIN NOTIFS
 # =========================
@@ -237,6 +217,26 @@ async def notify_admin_waitlist(context: ContextTypes.DEFAULT_TYPE, user, key: s
         parse_mode=ParseMode.MARKDOWN,
     )
 
+
+async def notify_admin_contact(context: ContextTypes.DEFAULT_TYPE, user, message_text: str) -> None:
+    """✅ Envoi à l'admin quand une cliente envoie un message via 'Contacter la formatrice'"""
+    if not ID_CHAT_ADMIN:
+        return
+
+    msg = (
+        "📩 *Nouveau message — Contact formation*\n"
+        f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+        f"🆔 User ID : `{user.id}`\n"
+    )
+    if user.username:
+        msg += f"🔗 Username : @{user.username}\n"
+    msg += f"\n💬 *Message :*\n{message_text}"
+
+    await context.bot.send_message(
+        chat_id=int(ID_CHAT_ADMIN),
+        text=msg,
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 # =========================
 # CALLBACKS
@@ -291,8 +291,16 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
+    # ✅ CONTACT: la cliente écrit un message -> envoyé à l'ADMIN
     if data == "main_contact":
-        await menu_contact(update, context)
+        context.user_data["contact_mode"] = True
+        await query.edit_message_text(
+            "📩 *Contacter la formatrice*\n\n"
+            "Écris ton message ici (question, réservation, confirmation de paiement…).\n\n"
+            "✅ Dès que tu l’envoies, je le transmets directement à la formatrice.",
+            reply_markup=retour_menu_principal_kb(),
+            parse_mode=ParseMode.MARKDOWN,
+        )
         return
 
     if data.startswith("formation_"):
@@ -328,6 +336,35 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
+# =========================
+# CONTACT MESSAGE RECEIVER
+# =========================
+async def handle_contact_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Si la cliente a cliqué sur 'Contacter la formatrice', son prochain message texte est envoyé à l'admin.
+    """
+    if not context.user_data.get("contact_mode"):
+        return
+
+    # On désactive le mode contact dès qu'on reçoit un message
+    context.user_data["contact_mode"] = False
+
+    if not ID_CHAT_ADMIN:
+        await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
+        return
+
+    user = update.effective_user
+    msg_text = (update.message.text or "").strip()
+    if not msg_text:
+        await update.message.reply_text("⚠️ Message vide. Réessaie.")
+        return
+
+    await notify_admin_contact(context, user, msg_text)
+
+    await update.message.reply_text(
+        "✅ Merci ! Ton message a bien été transmis à la formatrice. 🤍",
+        reply_markup=retour_menu_principal_kb(),
+    )
 
 # =========================
 # PROOF RECEIVER
@@ -384,7 +421,6 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     context.user_data.pop("paid_key", None)
 
-
 # =========================
 # MAIN
 # =========================
@@ -396,7 +432,12 @@ def main() -> None:
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(on_callback))
+
+    # preuves paiement (photo/pdf)
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.PDF, send_proof))
+
+    # ✅ contact: texte (hors commandes)
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_contact_message))
 
     app.run_polling()
 
