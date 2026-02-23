@@ -19,14 +19,11 @@ from telegram.ext import (
 # =========================
 # ENV
 # =========================
-# Accepte TOKEN, et si tu avais mis JETON avant, ça marche aussi.
 TOKEN = os.getenv("TOKEN") or os.getenv("JETON")
-
-# ID de TON compte Telegram (chat id admin) pour recevoir les preuves
 ID_CHAT_ADMIN = os.getenv("ID_CHAT_ADMIN")  # ex: "8453472234"
 
-# Lien PayPal (mettre ton lien de paiement / ou ton linktree / ou un lien par formation si tu veux)
-PAYPAL_LINK = os.getenv("PAYPAL_LINK", "https://www.paypal.com/")  # <-- remplace si besoin
+# Lien PayPal général (si tu as un lien unique). Sinon tu peux mettre un lien par formation dans FORMATIONS.
+PAYPAL_LINK_DEFAULT = os.getenv("PAYPAL_LINK", "https://www.paypal.com/")
 
 REGLES = (
     "📌 *Règles importantes*\n"
@@ -38,51 +35,69 @@ REGLES = (
 # =========================
 # DATA
 # =========================
+# ✅ PRIX + CONTENU + DATES selon ton message
+# ⚠️ Acompte : je l’ai mis à 30% par défaut (tu peux modifier)
 FORMATIONS: Dict[str, Dict[str, Any]] = {
     "henna_2j": {
-        "titre": "Henna Brow — 2 jours",
+        "titre": "Maîtriser la Prestation Henna Brow — 2 jours",
         "details": [
-            "Brow Mapping",
-            "Préparation du sourcil",
-            "Application du henné",
-            "Retouches & conseils",
+            "Brow Mapping (avec décoloration OU épilation cire)",
+            "Colorimétrie Henné",
+            "Pratique sur plusieurs modèles",
         ],
-        "prix": 1290,
-        "acompte": 390,
-        "dates": "Sur demande (contactez la formatrice)",
+        "prix": 990,
+        "acompte": 297,  # 30% de 990 = 297 (modifie si tu veux un autre acompte)
+        "dates": "Pas de dates fixes — contactez la formatrice.",
     },
     "browlift_2j": {
-        "titre": "Browlift — 2 jours",
+        "titre": "Maîtriser la Prestation Browlift — 2 jours",
         "details": [
-            "Diagnostic",
-            "Browlift complet",
-            "Finitions",
-            "Conseils entretien",
+            "Brow Mapping + Teinture Hybride",
+            "Décoloration OU épilation cire",
+            "Pratique sur plusieurs modèles",
         ],
-        "prix": 1290,
-        "acompte": 390,
-        "dates": "Sur demande (contactez la formatrice)",
+        "prix": 1190,
+        "acompte": 357,  # 30% de 1190 = 357
+        "dates": "Pas de dates fixes — contactez la formatrice.",
     },
+
+    # ✅ Formation ultime = 2 tarifs
     "ultime_4j": {
-        "titre": "Formation Ultime — 4 jours",
+        "titre": "Formation Ultime Dream Sourcil — 4 jours",
         "details": [
-            "Mapping",
-            "Décoloration surplus",
-            "Teinture / Hybrid",
-            "Browlift",
-            "Business / réseaux",
+            "Restructuration simple (décoloration OU épilation cire)",
+            "Browlift Restructuration",
+            "Browlift + Teinture + Restructuration",
+            "Prestation Henna Brow",
+            "Prestation Teinture Hybride",
+            "Module Marketing : attirer & fidéliser ses premières clientes",
         ],
-        "prix": 2590,
-        "acompte": 790,
+        "prix": 1790,
+        "acompte": 537,  # 30% de 1790 = 537
+        "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
+    },
+
+    # ✅ Option “Ultime sans Henna” (pour refléter ton offre)
+    "ultime_4j_sans_henna": {
+        "titre": "Formation Ultime Dream Sourcil — 4 jours (Sans module Henna Brow)",
+        "details": [
+            "Restructuration simple (décoloration OU épilation cire)",
+            "Browlift Restructuration",
+            "Browlift + Teinture + Restructuration",
+            "Prestation Teinture Hybride",
+            "Module Marketing : attirer & fidéliser ses premières clientes",
+        ],
+        "prix": 1500,
+        "acompte": 450,  # 30% de 1500 = 450
         "dates": "27 → 30 avril 2026\n27 → 30 juillet 2026",
     },
 }
 
 # =========================
-# HELPERS / MENUS
+# MENUS
 # =========================
 def main_menu_kb() -> InlineKeyboardMarkup:
-    """Menu principal (comme ta capture)"""
+    # ✅ Menu principal “comme avant”
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 Formations", callback_data="menu_formations")],
         [InlineKeyboardButton("📅 Prochaines dates", callback_data="main_dates")],
@@ -93,11 +108,11 @@ def main_menu_kb() -> InlineKeyboardMarkup:
 
 
 def menu_formations_kb() -> InlineKeyboardMarkup:
-    """Sous-menu formations (Henna/Browlift/Ultime)"""
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📚 Henna Brow (2j)", callback_data="formation_henna_2j")],
         [InlineKeyboardButton("✨ Browlift (2j)", callback_data="formation_browlift_2j")],
         [InlineKeyboardButton("👑 Formation Ultime (4j)", callback_data="formation_ultime_4j")],
+        [InlineKeyboardButton("👑 Ultime (4j) — sans Henna", callback_data="formation_ultime_4j_sans_henna")],
         [InlineKeyboardButton("⬅️ Retour menu principal", callback_data="main_menu")],
     ])
 
@@ -113,17 +128,18 @@ def retour_menu_formations_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")]
     ])
 
+
 # =========================
 # COMMANDS
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # ✅ MENU PRINCIPAL (comme avant)
     await update.message.reply_text(
         "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
         "Choisissez une rubrique ci-dessous :",
         reply_markup=main_menu_kb(),
         parse_mode=ParseMode.MARKDOWN,
     )
+
 
 # =========================
 # VIEWS
@@ -133,19 +149,20 @@ async def afficher_formation(update: Update, context: ContextTypes.DEFAULT_TYPE,
     await query.answer()
 
     f = FORMATIONS[key]
+    paypal_link = f.get("paypal_link") or PAYPAL_LINK_DEFAULT
 
     texte = (
         f"✨ *{f['titre']}*\n\n"
         f"✅ *Inclus :*\n" + "\n".join([f"• {x}" for x in f["details"]]) + "\n\n"
         f"💶 *Prix :* {f['prix']}€\n"
-        f"💳 *Acompte (30%) :* {f['acompte']}€\n"
+        f"💳 *Acompte :* {f['acompte']}€\n"
         f"📅 *Dates :*\n{f['dates']}\n\n"
         f"{REGLES}"
     )
 
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=PAYPAL_LINK)],
-        [InlineKeyboardButton(f"💰 Payer en intégral ({f['prix']}€)", url=PAYPAL_LINK)],
+        [InlineKeyboardButton(f"💳 Payer l’acompte ({f['acompte']}€)", url=paypal_link)],
+        [InlineKeyboardButton(f"💰 Payer en intégral ({f['prix']}€)", url=paypal_link)],
         [InlineKeyboardButton("✅ J’ai déjà payé — envoyer ma preuve", callback_data=f"paid_{key}")],
         [InlineKeyboardButton("🕒 S’inscrire sur liste d’attente", callback_data=f"waitlist_{key}")],
         [InlineKeyboardButton("⬅️ Retour formations", callback_data="menu_formations")],
@@ -164,9 +181,9 @@ async def menu_dates(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     texte = (
         "📅 *Prochaines dates*\n\n"
-        "• Formation Ultime : 27 → 30 avril 2026\n"
-        "• Formation Ultime : 27 → 30 juillet 2026\n\n"
-        "Les formations 2 jours sont sur demande : contactez la formatrice."
+        "• Formation Ultime Dream Sourcil (4j) : 27 → 30 avril 2026\n"
+        "• Formation Ultime Dream Sourcil (4j) : 27 → 30 juillet 2026\n\n"
+        "Les formations *2 jours* n’ont pas de date fixe : contactez la formatrice."
     )
 
     await query.edit_message_text(
@@ -181,7 +198,7 @@ async def menu_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await query.answer()
 
     texte = (
-        "📩 *Contact*\n\n"
+        "📩 *Contacter la formatrice*\n\n"
         "Pour réserver une date, poser une question ou confirmer un paiement :\n"
         "• Instagram : @dreamsourcil_marseille\n"
         "• Email : dreamsourcil.marseille@gmail.com"
@@ -193,6 +210,34 @@ async def menu_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         parse_mode=ParseMode.MARKDOWN,
     )
 
+
+# =========================
+# ADMIN NOTIFS
+# =========================
+async def notify_admin_waitlist(context: ContextTypes.DEFAULT_TYPE, user, key: str) -> None:
+    """✅ Envoi à l'admin quand quelqu'un s'inscrit sur liste d'attente"""
+    if not ID_CHAT_ADMIN:
+        return
+
+    chat_id_admin = int(ID_CHAT_ADMIN)
+    f = FORMATIONS.get(key, {"titre": key})
+
+    msg = (
+        "📋 *Liste d’attente — nouvelle demande*\n"
+        f"👤 Nom : {user.first_name or ''} {user.last_name or ''}\n"
+        f"🆔 User ID : `{user.id}`\n"
+        f"📚 Formation : *{f.get('titre', key)}*\n"
+    )
+    if user.username:
+        msg += f"🔗 Username : @{user.username}\n"
+
+    await context.bot.send_message(
+        chat_id=chat_id_admin,
+        text=msg,
+        parse_mode=ParseMode.MARKDOWN,
+    )
+
+
 # =========================
 # CALLBACKS
 # =========================
@@ -201,7 +246,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     data = query.data
     await query.answer()
 
-    # ✅ Retour / affichage menu principal
     if data == "main_menu":
         await query.edit_message_text(
             "👋 *Bienvenue sur le bot Dream Sourcil Formations.*\n\n"
@@ -211,7 +255,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ Rubrique Formations => sous-menu (Henna/Browlift/Ultime)
     if data == "menu_formations":
         await query.edit_message_text(
             "Choisissez une formation :",
@@ -219,16 +262,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ Rubrique Prochaines dates
     if data == "main_dates":
         await menu_dates(update, context)
         return
 
-    # ✅ Rubrique Paiement / Acompte
     if data == "main_paiement":
         await query.edit_message_text(
             "💳 *Paiement / Acompte*\n\n"
-            "👉 Pour payer un acompte ou le total :\n"
+            "👉 Pour payer :\n"
             "1) Cliquez sur *📚 Formations*\n"
             "2) Choisissez votre formation\n"
             "3) Cliquez sur *Payer l’acompte* ou *Payer en intégral*\n\n"
@@ -238,11 +279,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ Rubrique Liste d’attente
     if data == "main_waitlist":
         await query.edit_message_text(
             "📋 *Liste d’attente*\n\n"
-            "👉 Pour vous inscrire sur liste d’attente :\n"
+            "👉 Pour vous inscrire :\n"
             "1) Cliquez sur *📚 Formations*\n"
             "2) Choisissez la formation\n"
             "3) Cliquez sur *🕒 S’inscrire sur liste d’attente*.",
@@ -251,12 +291,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    # ✅ Rubrique Contact
     if data == "main_contact":
         await menu_contact(update, context)
         return
 
-    # ======= Formations =======
     if data.startswith("formation_"):
         key = data.replace("formation_", "")
         await afficher_formation(update, context, key)
@@ -277,8 +315,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     if data.startswith("waitlist_"):
+        key = data.replace("waitlist_", "")
+        user = update.effective_user
+
+        # ✅ NOTIFIER ADMIN
+        await notify_admin_waitlist(context, user, key)
+
         await query.edit_message_text(
-            "🕒 D’accord ! Vous êtes noté(e) pour la liste d’attente.\n\n"
+            "🕒 D’accord ! Vous êtes noté(e) sur la liste d’attente.\n\n"
             "📩 La formatrice vous recontactera dès qu’une place se libère.",
             reply_markup=retour_menu_formations_kb(),
         )
@@ -298,13 +342,11 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         )
         return
 
-    # admin
     if not ID_CHAT_ADMIN:
         await update.message.reply_text("⚠️ Admin non configuré (ID_CHAT_ADMIN manquant).")
         return
 
     chat_id_admin = int(ID_CHAT_ADMIN)
-
     user = update.effective_user
     f = FORMATIONS.get(key, {"titre": key})
 
@@ -315,7 +357,6 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         f"📚 Formation : *{f.get('titre', key)}*\n"
     )
 
-    # photo
     if update.message.photo:
         file_id = update.message.photo[-1].file_id
         await context.bot.send_photo(
@@ -324,8 +365,6 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             caption=caption,
             parse_mode=ParseMode.MARKDOWN,
         )
-
-    # document (pdf)
     elif update.message.document:
         file_id = update.message.document.file_id
         await context.bot.send_document(
@@ -338,13 +377,11 @@ async def send_proof(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         await update.message.reply_text("⚠️ Merci d’envoyer une *photo* ou un *PDF*.")
         return
 
-    # confirmation user
     await update.message.reply_text(
         "✅ Merci ! Preuve bien reçue.\n"
         "La formatrice a été notifiée et reviendra vers vous pour la confirmation finale. 🤍"
     )
 
-    # reset
     context.user_data.pop("paid_key", None)
 
 
@@ -357,13 +394,8 @@ def main() -> None:
 
     app = Application.builder().token(TOKEN).build()
 
-    # commands
     app.add_handler(CommandHandler("start", start))
-
-    # callbacks
     app.add_handler(CallbackQueryHandler(on_callback))
-
-    # proof receiver
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.PDF, send_proof))
 
     app.run_polling()
