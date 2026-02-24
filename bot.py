@@ -501,7 +501,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
 # =========================
-# TEXT ROUTER (IA ou CONTACT)
+# TEXT ROUTER (IA ou CONTACT) + AUTO-START ✅
 # =========================
 async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_text = (update.message.text or "").strip()
@@ -530,6 +530,16 @@ async def handle_text_router(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=retour_menu_principal_kb(),
         )
         return
+
+    # ✅ AUTO-START : n'importe quel message => affiche le menu
+    context.user_data["contact_mode"] = False
+    context.user_data["ai_mode"] = False
+    await update.message.reply_text(
+        "👋 *Bienvenue sur le bot Dream Sourcil Formation.*\n\n"
+        "Choisissez une rubrique ci-dessous :",
+        reply_markup=main_menu_kb(),
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 # =========================
 # PROOF RECEIVER
@@ -601,7 +611,7 @@ def main() -> None:
     # preuves paiement (photo/pdf)
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.PDF, send_proof))
 
-    # texte: routeur (IA ou Contact)
+    # texte: routeur (IA / Contact / Auto-start)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text_router))
 
     app.run_polling()
